@@ -21,12 +21,12 @@ import org.apache.http.nio.entity.NStringEntity;
  *
  * @author Andrew Vitkus
  */
-public class NGeneratedPage extends AbstractPage implements IGeneratedPage {
+public class NGeneratedStringPage extends AbstractPage implements IGeneratedPage {
 
-    private final static Logger LOG = Logger.getLogger(NGeneratedPage.class.getName());
-    private final IPageGenerator generator;
+    private final static Logger LOG = Logger.getLogger(NGeneratedStringPage.class.getName());
+    private final INStringPageGenerator generator;
 
-    public NGeneratedPage(Path pagePath, IPageGenerator generator) {
+    public NGeneratedStringPage(Path pagePath, INStringPageGenerator generator) {
         super(pagePath);
         this.generator = generator;
     }
@@ -41,7 +41,8 @@ public class NGeneratedPage extends AbstractPage implements IGeneratedPage {
         try {
             Optional<FileItem[]> args = ArgUtil.parse(request);
             Optional<Header[]> headers = Optional.of(request.getAllHeaders());
-            return generator.getPage(args, headers);
+            INStringPageGenerator generator = (INStringPageGenerator)getGenerator();
+            return new NStringEntity(generator.getPageString(args, headers), generator.getContentType());
         } catch (UnsupportedEncodingException ex) {
             LOG.log(Level.WARNING, null, ex);
         } catch (FileUploadException ex) {

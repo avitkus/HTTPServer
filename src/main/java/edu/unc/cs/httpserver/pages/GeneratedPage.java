@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.ParseException;
@@ -39,15 +40,16 @@ public class GeneratedPage extends AbstractPage implements IGeneratedPage {
     public HttpEntity getResponse(HttpRequest request) throws ResponseStatusNotice {
         try {
             Optional<FileItem[]> args = ArgUtil.parse(request);
-            return new StringEntity(generator.getPage(args));
+            Optional<Header[]> headers = Optional.of(request.getAllHeaders());
+            return generator.getPage(args, headers);
         } catch (UnsupportedEncodingException ex) {
-            LOG.log(Level.SEVERE, null, ex);
+            LOG.log(Level.WARNING, null, ex);
         } catch (FileUploadException ex) {
-            LOG.log(Level.SEVERE, null, ex);
+            LOG.log(Level.WARNING, null, ex);
         } catch (ParseException ex) {
-            LOG.log(Level.SEVERE, null, ex);
+            LOG.log(Level.WARNING, null, ex);
         } catch (IOException ex) {
-            LOG.log(Level.SEVERE, null, ex);
+            LOG.log(Level.WARNING, null, ex);
         }
         return null;
     }

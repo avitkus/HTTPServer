@@ -68,7 +68,7 @@ public class NPageHandler implements INPageHandler {
             requestLineStr = brl.toString();
             requestLineStr = requestLine.getMethod() + " " + requestLine.getUri() + " " + requestLine.getProtocolVersion().getProtocol();
         }
-        LOG.log(Level.INFO, "Handling request: {0}", requestLine);
+        LOG.log(Level.FINEST, "Handling request: {0}", requestLine);
 
         HttpCoreContext coreContext = HttpCoreContext.adapt(context);
 
@@ -96,7 +96,7 @@ public class NPageHandler implements INPageHandler {
             String defaultMessage = "<html><body><h1>Page " + target + " not found</h1></body></html>";
             response.setEntity(getErrorPage(HttpStatus.SC_NOT_FOUND, defaultMessage, request));
 
-            LOG.log(Level.INFO, "Page {0} not found", requestedPath);
+            LOG.log(Level.FINEST, "Page {0} not found", requestedPath);
 
         } else {
             NHttpConnection conn = coreContext.getConnection(NHttpConnection.class);
@@ -111,21 +111,23 @@ public class NPageHandler implements INPageHandler {
             if (page != null) {
                 try {
                     response.setStatusCode(HttpStatus.SC_OK);
-                    response.setEntity(page.getResponse(request));
-
-                    LOG.log(Level.INFO, "{0}: Serving file {1}", new Object[]{conn, requestedPath});
+                    if (!method.equals("HEAD")) {
+                        response.setEntity(page.getResponse(request));
+                    }
+                    
+                    LOG.log(Level.FINEST, "{0}: Serving file {1}", new Object[]{conn, requestedPath});
                 } catch (ResponseStatusNotice ex) {
                     response.setStatusCode(ex.getStatus());
                     response.setEntity(getErrorPage(ex.getStatus(), ex.getMessage(), request));
 
-                    LOG.log(Level.INFO, "{0}: Error #{1} on page {2}", new Object[]{conn, ex.getStatus(), requestedPath});
+                    LOG.log(Level.FINEST, "{0}: Error #{1} on page {2}", new Object[]{conn, ex.getStatus(), requestedPath});
                 }
             } else {
                 response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
                 String defaultMessage = "<html><head><title>Error 405</title></head><body><h1>Error 405: Method not allowed</h1><hr>Method \"" + method + "\" not supported for this page.</body></html>";
                 response.setEntity(getErrorPage(HttpStatus.SC_METHOD_NOT_ALLOWED, defaultMessage, request));
 
-                LOG.log(Level.INFO, "{0}: Illegal method requested for file {1}", new Object[]{conn, requestedPath});
+                LOG.log(Level.FINEST, "{0}: Illegal method requested for file {1}", new Object[]{conn, requestedPath});
             }
         }
     }

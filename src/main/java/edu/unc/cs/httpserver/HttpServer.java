@@ -41,6 +41,8 @@ import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 public class HttpServer extends AbstractHttpServer {
 
     private static final Logger LOG = Logger.getLogger(HttpServer.class.getName());
+    
+    private volatile boolean doClose = false;
 
     HttpServer(Path root, int port) {
         this(root, port, null);
@@ -105,24 +107,24 @@ public class HttpServer extends AbstractHttpServer {
 
         @Override
         public void run() {
-            LOG.log(Level.INFO, "New connection thread started");
+            LOG.log(Level.FINEST, "New connection thread started");
             HttpContext context = new BasicHttpContext();
             try {
                 while (!Thread.interrupted() && serverConnection.isOpen()) {
                     httpService.handleRequest(serverConnection, context);
                 }
             } catch (ConnectionClosedException ex) {
-                LOG.log(Level.INFO, null, "Client closed connection");
+                LOG.log(Level.FINEST, null, "Client closed connection");
             } catch (IOException ex) {
-                LOG.log(Level.SEVERE, null, ex);
+                LOG.log(Level.WARNING, null, ex);
             } catch (HttpException ex) {
-                LOG.log(Level.SEVERE, null, ex);
+                LOG.log(Level.WARNING, null, ex);
             } finally {
                 if(serverConnection != null) {
                     try {
                         serverConnection.shutdown();
                     } catch (IOException ex) {
-                        LOG.log(Level.SEVERE, null, ex);
+                        LOG.log(Level.WARNING, null, ex);
                     }
                 }
             }
@@ -144,35 +146,45 @@ public class HttpServer extends AbstractHttpServer {
         @Override
         public void run() {
             if (isHttp()) {
-                LOG.log(Level.INFO, "Listening for HTTP traffic on port {0}", serverSocket.getLocalPort());
+                LOG.log(Level.CONFIG, "Listening for HTTP traffic on port {0}", serverSocket.getLocalPort());
             } else {
-                LOG.log(Level.INFO, "Listening for HTTPS traffic on port {0}", serverSocket.getLocalPort());
+                LOG.log(Level.CONFIG, "Listening for HTTPS traffic on port {0}", serverSocket.getLocalPort());
             }
-            while (!Thread.interrupted()) {
+            while (!Thread.interrupted() && !doClose) {
                 Socket socket = null;
                 try {
                     // Set up HTTP connection
                     socket = serverSocket.accept();
-                    LOG.log(Level.INFO, "Incoming connection from {0}", socket.getInetAddress());
+                    LOG.log(Level.FINEST, "Incoming connection from {0}", socket.getInetAddress());
                     HttpServerConnection conn = connectionFactory.createConnection(socket);
                     // Start worker thread
                     Thread t = new ConnectionHandlerThread(httpService, conn);
                     t.setDaemon(true);
                     t.start();
                 } catch (InterruptedIOException ex) {
-                    LOG.log(Level.SEVERE, null, ex);
+                    LOG.log(Level.WARNING, null, ex);
                 } catch (IOException e) {
-                    LOG.log(Level.SEVERE, null, e);
+                    LOG.log(Level.WARNING, null, e);
                 } finally {
                     if (socket != null) {
                         try {
                             socket.close();
                         } catch (IOException ex) {
-                            LOG.log(Level.SEVERE, null, ex);
+                            LOG.log(Level.WARNING, null, ex);
                         }
                     }
                 }
             }
+            try {
+                serverSocket.close();
+            } catch (IOException ex) {
+                LOG.log(Level.SEVERE, null, ex);
+            }
         }
+    }
+    
+    @Override
+    public void close() throws Exception {
+        doClose = true;
     }
 }

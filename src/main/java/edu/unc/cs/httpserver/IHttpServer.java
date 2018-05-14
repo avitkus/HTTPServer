@@ -13,6 +13,7 @@ public interface IHttpServer {
     public boolean addPage(IPage page);
 
     public void start() throws Exception;
+    public void close() throws Exception;
 
     public boolean setErrorPage(int error, IPage page);
 

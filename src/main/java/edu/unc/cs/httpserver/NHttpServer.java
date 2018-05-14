@@ -6,6 +6,7 @@ import edu.unc.cs.httpserver.requestHandlers.NPageHandler;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -28,6 +29,7 @@ import org.apache.http.nio.protocol.HttpAsyncService;
 import org.apache.http.nio.protocol.UriHttpAsyncRequestHandlerMapper;
 import org.apache.http.nio.reactor.IOEventDispatch;
 import org.apache.http.nio.reactor.IOReactorException;
+import org.apache.http.nio.reactor.ListenerEndpoint;
 import org.apache.http.nio.reactor.ListeningIOReactor;
 import org.apache.http.protocol.HttpProcessor;
 import org.apache.http.protocol.HttpProcessorBuilder;
@@ -43,6 +45,8 @@ import org.apache.http.protocol.ResponseServer;
 public class NHttpServer extends AbstractHttpServer {
 
     private static final Logger LOG = Logger.getLogger(NHttpServer.class.getName());
+    
+    private ListeningIOReactor ioReactor;
 
     NHttpServer(Path root, int port) {
         this(root, port, null);
@@ -68,13 +72,13 @@ public class NHttpServer extends AbstractHttpServer {
 
             @Override
             public void connected(final NHttpServerConnection conn) {
-                LOG.log(Level.INFO, "{0}: connection open", conn);
+                LOG.log(Level.FINEST, "{0}: connection open", conn);
                 super.connected(conn);
             }
 
             @Override
             public void closed(final NHttpServerConnection conn) {
-                LOG.log(Level.INFO, "{0}: connection closed", conn);
+                LOG.log(Level.FINEST, "{0}: connection closed", conn);
                 super.closed(conn);
             }
 
@@ -102,7 +106,7 @@ public class NHttpServer extends AbstractHttpServer {
                 .setConnectTimeout(60000)
                 .build();
         // Create server-side I/O reactor
-        ListeningIOReactor ioReactor = new DefaultListeningIOReactor(config);
+        ioReactor = new DefaultListeningIOReactor(config);
         try {
             // Listen of the given port
             ioReactor.listen(new InetSocketAddress(getPort()));
@@ -110,11 +114,23 @@ public class NHttpServer extends AbstractHttpServer {
             ioReactor.execute(ioEventDispatch);
         } catch (InterruptedIOException ex) {
             LOG.log(Level.SEVERE, null, ex);
+            try {
+                ioReactor.shutdown();
+            } catch (IOException ex1) {
+                LOG.log(Level.SEVERE, null, ex1);
+            }
+            Thread.currentThread().interrupt();
         } catch (IOException ex) {
             LOG.log(Level.SEVERE, null, ex);
         }
 
         LOG.log(Level.INFO, "Shutdown");
+    }
+    
+    @Override
+    public void close() throws Exception {
+        ioReactor.shutdown();
+        ioReactor.getEndpoints().forEach(ListenerEndpoint::close);
     }
 
     @Override

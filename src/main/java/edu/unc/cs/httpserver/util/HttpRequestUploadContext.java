@@ -108,7 +108,7 @@ public class HttpRequestUploadContext implements UploadContext {
                 try {
                     length = Long.parseLong(header.getValue());
                 } catch (NumberFormatException ex) {
-                    LOG.log(Level.INFO, null, ex);
+                    LOG.log(Level.FINEST, null, ex);
                 }
             }
         }

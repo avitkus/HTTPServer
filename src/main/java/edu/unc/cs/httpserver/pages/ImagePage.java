@@ -66,7 +66,7 @@ public class ImagePage extends AbstractPage implements IImagePage {
                     updateImage();
                 }
             } catch (IOException ex) {
-                LOG.log(Level.SEVERE, null, ex);
+                LOG.log(Level.WARNING, null, ex);
             }
             return image;
         }
@@ -80,7 +80,7 @@ public class ImagePage extends AbstractPage implements IImagePage {
                     updateImage();
                 }
             } catch (IOException ex) {
-                LOG.log(Level.SEVERE, null, ex);
+                LOG.log(Level.WARNING, null, ex);
             }
             return new ByteArrayEntity(imageBytes, dispType);
         }
@@ -113,7 +113,7 @@ public class ImagePage extends AbstractPage implements IImagePage {
             ImageIO.write(image, extension, baos);
             newBytes = baos.toByteArray();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, null, e);
+            LOG.log(Level.WARNING, null, e);
             newBytes = new byte[]{};
         }
         imageBytes = newBytes;

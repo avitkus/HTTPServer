@@ -62,7 +62,7 @@ public class ArgUtil {
         FileItem[] items = null;
 
         String uri = request.getRequestLine().getUri();
-        System.out.println(uri);
+//        System.out.println(uri);
         String[] uriParts = uri.split("\\?", 2);
         if (uriParts.length > 1) {
             System.out.println(uriParts[1]);
